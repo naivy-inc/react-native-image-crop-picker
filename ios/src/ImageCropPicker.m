@@ -738,13 +738,7 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
         self.croppingFile[@"modifcationDate"] = modificationDate;
         NSLog(@"CroppingFile %@", self.croppingFile);
 
-        // 기본 width, height를 0으로 두고 기본값을 입력 안한경우 이미지 크기가 들어가도록 수정
-        if([[self.options objectForKey:@"width"] intValue] == 0 && [[self.options objectForKey:@"height"] intValue] == 0){
-            ImageResult *imageResult = [self.compression compressImage:[image fixOrientation]  withOptions:self.options];
 
-            [self.options setValue:imageResult.width forKey:@"width"];
-            [self.options setValue:imageResult.height forKey:@"height"];
-        }
 
         [self cropImage:[image fixOrientation]];
     } else {
@@ -808,6 +802,18 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
     // so resize image
     CGSize desiredImageSize = CGSizeMake([[[self options] objectForKey:@"width"] intValue],
                                          [[[self options] objectForKey:@"height"] intValue]);
+
+
+   if([[self.options objectForKey:@"width"] intValue] == 0 && [[self.options objectForKey:@"height"] intValue] == 0){
+       CGFloat width = [[[self croppingFile] objectForKey:@"width"] floatValue];
+       CGFloat height = [[[self croppingFile] objectForKey:@"height"] floatValue];
+
+       desiredImageSize.width = width;
+       desiredImageSize.height = height;
+
+    }
+
+
 
     UIImage *resizedImage = [croppedImage resizedImageToFitInSize:desiredImageSize scaleIfSmaller:YES];
     ImageResult *imageResult = [self.compression compressImage:resizedImage withOptions:self.options];
@@ -883,7 +889,23 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
             CGSize aspectRatio = CGSizeMake(widthRatio, heightRatio);
             cropVC.customAspectRatio = aspectRatio;
 
+        }else{
+            ImageResult *imageResult = [self.compression compressImage:[image fixOrientation]  withOptions:self.options];
+
+
+            self.croppingFile[@"width"] = imageResult.width;
+            self.croppingFile[@"height"] = imageResult.height;
+
+            CGFloat widthRat = [imageResult.width floatValue];
+            CGFloat heightRat = [imageResult.height floatValue];
+
+            CGSize aspectRatio = CGSizeMake(widthRat, heightRat);
+            cropVC.customAspectRatio = aspectRatio;
+
+
         }
+
+
         cropVC.aspectRatioLockEnabled = ![[self.options objectForKey:@"freeStyleCropEnabled"] boolValue];
         cropVC.resetAspectRatioEnabled = !cropVC.aspectRatioLockEnabled;
     }
