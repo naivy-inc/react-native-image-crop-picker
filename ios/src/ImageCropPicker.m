@@ -738,6 +738,14 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
         self.croppingFile[@"modifcationDate"] = modificationDate;
         NSLog(@"CroppingFile %@", self.croppingFile);
 
+        // 기본 width, height를 0으로 두고 기본값을 입력 안한경우 이미지 크기가 들어가도록 수정
+        if([[self.options objectForKey:@"width"] intValue] == 0 && [[self.options objectForKey:@"height"] intValue] == 0){
+            ImageResult *imageResult = [self.compression compressImage:[image fixOrientation]  withOptions:self.options];
+
+            [self.options setValue:imageResult.width forKey:@"width"];
+            [self.options setValue:imageResult.height forKey:@"height"];
+        }
+
         [self cropImage:[image fixOrientation]];
     } else {
         ImageResult *imageResult = [self.compression compressImage:[image fixOrientation]  withOptions:self.options];
