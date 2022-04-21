@@ -891,17 +891,31 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
 
 #pragma mark - TOCCropViewController Implementation
 - (void)cropImage:(UIImage *)image {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        TOCropViewController *cropVC;
-        if ([[[self options] objectForKey:@"cropperCircleOverlay"] boolValue]) {
-            cropVC = [[TOCropViewController alloc] initWithCroppingStyle:TOCropViewCroppingStyleCircular image:image];
-        } else {
-            cropVC = [[TOCropViewController alloc] initWithImage:image];
-            CGFloat widthRatio = [[self.options objectForKey:@"width"] floatValue];
-            CGFloat heightRatio = [[self.options objectForKey:@"height"] floatValue];
-            if (widthRatio > 0 && heightRatio > 0){
-                CGSize aspectRatio = CGSizeMake(widthRatio, heightRatio);
-                cropVC.customAspectRatio = aspectRatio;
+dispatch_async(dispatch_get_main_queue(), ^{
+    TOCropViewController *cropVC;
+    if ([[[self options] objectForKey:@"cropperCircleOverlay"] boolValue]) {
+        cropVC = [[TOCropViewController alloc] initWithCroppingStyle:TOCropViewCroppingStyleCircular image:image];
+    } else {
+        cropVC = [[TOCropViewController alloc] initWithImage:image];
+        CGFloat widthRatio = [[self.options objectForKey:@"width"] floatValue];
+        CGFloat heightRatio = [[self.options objectForKey:@"height"] floatValue];
+        if (widthRatio > 0 && heightRatio > 0){
+            CGSize aspectRatio = CGSizeMake(widthRatio, heightRatio);
+            cropVC.customAspectRatio = aspectRatio;
+
+        }else{
+            ImageResult *imageResult = [self.compression compressImage:[image fixOrientation]  withOptions:self.options];
+
+
+            self.croppingFile[@"width"] = imageResult.width;
+            self.croppingFile[@"height"] = imageResult.height;
+
+            CGFloat widthRat = [imageResult.width floatValue];
+            CGFloat heightRat = [imageResult.height floatValue];
+
+            CGSize aspectRatio = CGSizeMake(widthRat, heightRat);
+            cropVC.customAspectRatio = aspectRatio;
+
 
             }
             cropVC.aspectRatioLockEnabled = ![[self.options objectForKey:@"freeStyleCropEnabled"] boolValue];
