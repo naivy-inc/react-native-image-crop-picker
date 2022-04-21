@@ -878,6 +878,7 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
 
 #pragma mark - TOCCropViewController Implementation
 - (void)cropImage:(UIImage *)image {
+dispatch_async(dispatch_get_main_queue(), ^{
     TOCropViewController *cropVC;
     if ([[[self options] objectForKey:@"cropperCircleOverlay"] boolValue]) {
         cropVC = [[TOCropViewController alloc] initWithCroppingStyle:TOCropViewCroppingStyleCircular image:image];
@@ -918,7 +919,6 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
 
     cropVC.modalPresentationStyle = UIModalPresentationFullScreen;
 
-    dispatch_async(dispatch_get_main_queue(), ^{
         [[self getRootVC] presentViewController:cropVC animated:FALSE completion:nil];
     });
 }
