@@ -66,6 +66,11 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private static final String E_PERMISSIONS_MISSING = "E_PERMISSION_MISSING";
     private static final String E_ERROR_WHILE_CLEANING_FILES = "E_ERROR_WHILE_CLEANING_FILES";
 
+    private static final String E_NO_LIBRARY_PERMISSION_KEY = "E_NO_LIBRARY_PERMISSION";
+    private static final String E_NO_LIBRARY_PERMISSION_MSG = "User did not grant library permission.";
+    private static final String E_NO_CAMERA_PERMISSION_KEY = "E_NO_CAMERA_PERMISSION";
+    private static final String E_NO_CAMERA_PERMISSION_MSG = "User did not grant camera permission.";
+
     private String mediaType = "any";
     private boolean multiple = false;
     private boolean includeBase64 = false;
@@ -221,8 +226,14 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private void permissionsCheck(final Activity activity, final Promise promise, final List<String> requiredPermissions, final Callable<Void> callback) {
 
         List<String> missingPermissions = new ArrayList<>();
+        List<String> supportedPermissions = new ArrayList<>(requiredPermissions);
 
-        for (String permission : requiredPermissions) {
+        // android 11 introduced scoped storage, and WRITE_EXTERNAL_STORAGE no longer works there
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+            supportedPermissions.remove(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+
+        for (String permission : supportedPermissions) {
             int status = ActivityCompat.checkSelfPermission(activity, permission);
             if (status != PackageManager.PERMISSION_GRANTED) {
                 missingPermissions.add(permission);
@@ -237,9 +248,19 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
                 public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
                     if (requestCode == 1) {
 
-                        for (int grantResult : grantResults) {
+                        for (int permissionIndex = 0; permissionIndex < permissions.length; permissionIndex++) {
+                            String permission = permissions[permissionIndex];
+                            int grantResult = grantResults[permissionIndex];
+
                             if (grantResult == PackageManager.PERMISSION_DENIED) {
-                                promise.reject(E_PERMISSIONS_MISSING, "Required permission missing");
+                                if (permission.equals(Manifest.permission.CAMERA)) {
+                                    promise.reject(E_NO_CAMERA_PERMISSION_KEY, E_NO_CAMERA_PERMISSION_MSG);
+                                } else if (permission.equals(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                                    promise.reject(E_NO_LIBRARY_PERMISSION_KEY, E_NO_LIBRARY_PERMISSION_MSG);
+                                } else {
+                                    // should not happen, we fallback on E_NO_LIBRARY_PERMISSION_KEY rejection for minimal consistency
+                                    promise.reject(E_NO_LIBRARY_PERMISSION_KEY, "Required permission missing");
+                                }
                                 return true;
                             }
                         }
